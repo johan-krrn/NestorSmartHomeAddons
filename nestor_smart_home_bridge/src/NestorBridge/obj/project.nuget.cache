@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "M0S11PKYbO0=",
+  "dgSpecHash": "teF7r5rUsy8=",
   "success": true,
-  "projectFilePath": "C:\\Projects\\HomeAssistant\\NestorSmartHomeAddons\\nestor_bridge\\src\\NestorBridge\\NestorBridge.csproj",
+  "projectFilePath": "C:\\Projects\\HomeAssistant\\NestorSmartHomeAddons\\nestor_smart_home_bridge\\src\\NestorBridge\\NestorBridge.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\johanke\\.nuget\\packages\\mqttnet\\4.3.7.1207\\mqttnet.4.3.7.1207.nupkg.sha512",
     "C:\\Users\\johanke\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.25\\microsoft.netcore.app.ref.8.0.25.nupkg.sha512",

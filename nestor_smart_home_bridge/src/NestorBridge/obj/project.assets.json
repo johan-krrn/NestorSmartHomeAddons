@@ -95,11 +95,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Projects\\HomeAssistant\\NestorSmartHomeAddons\\nestor_bridge\\src\\NestorBridge\\NestorBridge.csproj",
+      "projectUniqueName": "C:\\Projects\\HomeAssistant\\NestorSmartHomeAddons\\nestor_smart_home_bridge\\src\\NestorBridge\\NestorBridge.csproj",
       "projectName": "NestorBridge",
-      "projectPath": "C:\\Projects\\HomeAssistant\\NestorSmartHomeAddons\\nestor_bridge\\src\\NestorBridge\\NestorBridge.csproj",
+      "projectPath": "C:\\Projects\\HomeAssistant\\NestorSmartHomeAddons\\nestor_smart_home_bridge\\src\\NestorBridge\\NestorBridge.csproj",
       "packagesPath": "C:\\Users\\johanke\\.nuget\\packages\\",
-      "outputPath": "C:\\Projects\\HomeAssistant\\NestorSmartHomeAddons\\nestor_bridge\\src\\NestorBridge\\obj\\",
+      "outputPath": "C:\\Projects\\HomeAssistant\\NestorSmartHomeAddons\\nestor_smart_home_bridge\\src\\NestorBridge\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\johanke\\AppData\\Roaming\\NuGet\\NuGet.Config"
