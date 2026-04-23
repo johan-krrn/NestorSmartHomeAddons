@@ -8,13 +8,16 @@ FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim AS
 ARG TARGETARCH
 WORKDIR /src
 
+# Map Docker arch names to .NET RID arch names (amd64 -> x64)
 COPY src/NestorBridge/NestorBridge.csproj src/NestorBridge/
-RUN dotnet restore src/NestorBridge/NestorBridge.csproj -r linux-${TARGETARCH}
+RUN DOTNET_ARCH=$([ "${TARGETARCH}" = "amd64" ] && echo "x64" || echo "${TARGETARCH}") \
+  && dotnet restore src/NestorBridge/NestorBridge.csproj -r linux-${DOTNET_ARCH}
 
 COPY src/NestorBridge/ src/NestorBridge/
-RUN dotnet publish src/NestorBridge/NestorBridge.csproj \
+RUN DOTNET_ARCH=$([ "${TARGETARCH}" = "amd64" ] && echo "x64" || echo "${TARGETARCH}") \
+  && dotnet publish src/NestorBridge/NestorBridge.csproj \
   -c Release \
-  -r linux-${TARGETARCH} \
+  -r linux-${DOTNET_ARCH} \
   --self-contained false \
   --no-restore \
   -o /app/publish
