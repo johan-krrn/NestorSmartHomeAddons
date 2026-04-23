@@ -29,5 +29,5 @@ fi
 # boucle de renouvellement
 while true; do
   /renew.sh
-  sleep 86400
+  sleep 1800
 done
