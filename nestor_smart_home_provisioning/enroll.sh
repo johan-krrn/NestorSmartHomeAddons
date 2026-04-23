@@ -23,8 +23,18 @@ RESPONSE=$(curl -s -X POST "$API_URL/enroll" \
     \"csr\": \"$CSR\"
   }")
 
-echo "$RESPONSE" | jq -r '.cert' > $CERT_DIR/device.crt
-echo "$RESPONSE" | jq -r '.ca' > $CERT_DIR/ca.crt
+echo ">> API response: $RESPONSE"
+
+CERT=$(echo "$RESPONSE" | jq -r '.cert // empty')
+CA=$(echo "$RESPONSE" | jq -r '.ca // empty')
+
+if [ -z "$CERT" ] || [ -z "$CA" ]; then
+  echo "ERROR: enrollment API did not return cert/ca. Response was: $RESPONSE"
+  exit 1
+fi
+
+echo "$CERT" > $CERT_DIR/device.crt
+echo "$CA" > $CERT_DIR/ca.crt
 
 chmod 644 $CERT_DIR/device.crt
 chmod 644 $CERT_DIR/ca.crt

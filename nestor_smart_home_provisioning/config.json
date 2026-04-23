@@ -1,6 +1,6 @@
 {
   "name": "Nestor Smart Home Provisioning",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "slug": "nestor_smart_home_provisioning",
   "description": "Enroll and renew X509 certificates via API",
   "startup": "services",
