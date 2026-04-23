@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nestor Bridge</title>
+  <style>
+    :root {
+      --bg: #1c1c1c;
+      --surface: #252525;
+      --border: #3a3a3a;
+      --text: #e0e0e0;
+      --text-dim: #888;
+      --inbound: #4fc3f7;
+      --outbound: #81c784;
+      --error: #e57373;
+      --accent: #64b5f6;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    header h1 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .stats {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .stats .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+
+    .dot-in {
+      background: var(--inbound);
+    }
+
+    .dot-out {
+      background: var(--outbound);
+    }
+
+    .dot-connected {
+      background: #4caf50;
+    }
+
+    .dot-disconnected {
+      background: var(--error);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .toolbar input,
+    .toolbar select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .toolbar input {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .toolbar button {
+      background: var(--border);
+      border: none;
+      color: var(--text);
+      padding: 4px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .toolbar button:hover {
+      background: #555;
+    }
+
+    #message-list {
+      overflow-y: auto;
+      padding: 0;
+      height: calc(100vh - 105px);
+    }
+
+    .msg {
+      display: grid;
+      grid-template-columns: 90px 70px 1fr auto;
+      gap: 8px;
+      padding: 6px 16px;
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      align-items: start;
+    }
+
+    .msg:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .msg .time {
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+
+    .msg .dir {
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 11px;
+    }
+
+    .msg .dir.in {
+      color: var(--inbound);
+    }
+
+    .msg .dir.out {
+      color: var(--outbound);
+    }
+
+    .msg .topic {
+      color: var(--accent);
+      word-break: break-all;
+    }
+
+    .msg .status {
+      font-size: 11px;
+      padding: 1px 6px;
+      border-radius: 3px;
+    }
+
+    .msg .status.success {
+      color: var(--outbound);
+    }
+
+    .msg .status.error {
+      color: var(--error);
+    }
+
+    .msg .payload {
+      grid-column: 1 / -1;
+      color: var(--text-dim);
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.2s;
+      padding-left: 90px;
+    }
+
+    .msg.expanded .payload {
+      max-height: 400px;
+    }
+
+    .empty-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    @media (max-width: 600px) {
+      .msg {
+        grid-template-columns: 60px 50px 1fr;
+        font-size: 11px;
+        padding: 4px 8px;
+      }
+
+      .msg .status {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>🌉 Nestor Bridge</h1>
+    <div class="stats">
+      <span id="conn-status"><span class="dot dot-disconnected"></span>Connecting…</span>
+      <span><span class="dot dot-in"></span>In: <span id="count-in">0</span></span>
+      <span><span class="dot dot-out"></span>Out: <span id="count-out">0</span></span>
+    </div>
+  </header>
+  <div class="toolbar">
+    <input type="text" id="filter" placeholder="Filter by topic or payload…">
+    <select id="dir-filter">
+      <option value="all">All</option>
+      <option value="in">↓ Inbound</option>
+      <option value="out">↑ Outbound</option>
+    </select>
+    <button id="btn-clear">Clear</button>
+    <label style="font-size:12px;color:var(--text-dim)">
+      <input type="checkbox" id="auto-scroll" checked> Auto-scroll
+    </label>
+  </div>
+  <div id="message-list">
+    <div class="empty-state" id="empty">Waiting for messages…</div>
+  </div>
+
+  <script>
+    (function () {
+      const list = document.getElementById('message-list');
+      const empty = document.getElementById('empty');
+      const filterInput = document.getElementById('filter');
+      const dirFilter = document.getElementById('dir-filter');
+      const btnClear = document.getElementById('btn-clear');
+      const autoScroll = document.getElementById('auto-scroll');
+      const connStatus = document.getElementById('conn-status');
+      const countIn = document.getElementById('count-in');
+      const countOut = document.getElementById('count-out');
+
+      let messages = [];
+      let inCount = 0, outCount = 0;
+
+      // Detect ingress base path
+      const basePath = document.location.pathname.replace(/\/+$/, '');
+
+      function formatTime(ts) {
+        const d = new Date(ts);
+        return d.toLocaleTimeString('fr-FR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+          + '.' + String(d.getMilliseconds()).padStart(3, '0');
+      }
+
+      function formatPayload(raw) {
+        try {
+          return JSON.stringify(JSON.parse(raw), null, 2);
+        } catch { return raw; }
+      }
+
+      function createRow(msg) {
+        const dir = msg.direction === 0 ? 'in' : 'out';
+        const dirLabel = msg.direction === 0 ? '↓ IN' : '↑ OUT';
+        const el = document.createElement('div');
+        el.className = 'msg';
+        el.dataset.dir = dir;
+        el.dataset.topic = msg.topic.toLowerCase();
+        el.dataset.payload = msg.payload.toLowerCase();
+
+        let statusHtml = '';
+        if (msg.status) {
+          const cls = msg.status === 'success' ? 'success' : 'error';
+          statusHtml = `<span class="status ${cls}">${msg.status}</span>`;
+        }
+
+        el.innerHTML = `
+      <span class="time">${formatTime(msg.timestamp)}</span>
+      <span class="dir ${dir}">${dirLabel}</span>
+      <span class="topic">${msg.topic}</span>
+      ${statusHtml}
+      <div class="payload">${formatPayload(msg.payload)}</div>
+    `;
+        el.addEventListener('click', () => el.classList.toggle('expanded'));
+        return el;
+      }
+
+      function applyFilter() {
+        const text = filterInput.value.toLowerCase();
+        const dir = dirFilter.value;
+        list.querySelectorAll('.msg').forEach(el => {
+          const dirMatch = dir === 'all' || el.dataset.dir === dir;
+          const textMatch = !text || el.dataset.topic.includes(text) || el.dataset.payload.includes(text);
+          el.style.display = (dirMatch && textMatch) ? '' : 'none';
+        });
+      }
+
+      filterInput.addEventListener('input', applyFilter);
+      dirFilter.addEventListener('change', applyFilter);
+      btnClear.addEventListener('click', () => {
+        messages = [];
+        list.innerHTML = '<div class="empty-state" id="empty">Waiting for messages…</div>';
+      });
+
+      function addMessage(msg) {
+        if (msg.direction === 0) inCount++; else outCount++;
+        countIn.textContent = inCount;
+        countOut.textContent = outCount;
+
+        const emptyEl = document.getElementById('empty');
+        if (emptyEl) emptyEl.remove();
+
+        messages.push(msg);
+        if (messages.length > 1000) {
+          messages.shift();
+          if (list.firstChild) list.removeChild(list.firstChild);
+        }
+
+        const row = createRow(msg);
+        list.appendChild(row);
+        applyFilter();
+
+        if (autoScroll.checked) {
+          list.scrollTop = list.scrollHeight;
+        }
+      }
+
+      // Load existing messages
+      fetch(basePath + '/api/messages')
+        .then(r => r.json())
+        .then(data => {
+          data.forEach(addMessage);
+        })
+        .catch(err => console.error('Failed to load history:', err));
+
+      // SSE for real-time updates
+      function connectSSE() {
+        const es = new EventSource(basePath + '/api/messages/stream');
+
+        es.onopen = () => {
+          connStatus.innerHTML = '<span class="dot dot-connected"></span>Connected';
+        };
+
+        es.addEventListener('message', (e) => {
+          const msg = JSON.parse(e.data);
+          addMessage(msg);
+        });
+
+        es.onerror = () => {
+          connStatus.innerHTML = '<span class="dot dot-disconnected"></span>Reconnecting…';
+          es.close();
+          setTimeout(connectSSE, 3000);
+        };
+      }
+
+      connectSSE();
+    })();
+  </script>
+</body>
+
+</html>

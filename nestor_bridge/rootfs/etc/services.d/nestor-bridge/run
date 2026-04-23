@@ -1,0 +1,12 @@
+#!/usr/bin/with-contenv bashio
+# ==============================================================================
+# Start Nestor Bridge
+# ==============================================================================
+set -e
+
+bashio::log.info "Starting Nestor Bridge..."
+bashio::log.info "Working directory: /app"
+bashio::log.info ".NET runtime: $(dotnet --version)"
+
+cd /app
+exec dotnet /app/NestorBridge.dll

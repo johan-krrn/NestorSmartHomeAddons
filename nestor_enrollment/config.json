@@ -1,0 +1,27 @@
+{
+  "name": "Nestor Smart Home Provisioning",
+  "version": "1.0.0",
+  "slug": "nestor_smart_home_provisioning",
+  "description": "Enroll and renew X509 certificates via API",
+  "startup": "services",
+  "boot": "auto",
+  "arch": [
+    "amd64",
+    "aarch64",
+    "armv7"
+  ],
+  "host_network": true,
+  "map": [
+    "ssl:rw"
+  ],
+  "options": {
+    "api_url": "https://apinestor-poc-echtfte3cmfjfufz.francecentral-01.azurewebsites.net/api",
+    "affaire": "",
+    "token": ""
+  },
+  "schema": {
+    "api_url": "str",
+    "affaire": "str",
+    "token": "password"
+  }
+}
