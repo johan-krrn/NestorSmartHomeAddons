@@ -190,7 +190,20 @@ public sealed class DownlinkWorker : IHostedService
     if (!request.Payload.HasValue)
       throw new InvalidOperationException("call_service request missing Payload");
 
-    var payload = request.Payload.Value;
+    // The backend may double-serialize Payload as a JSON string instead of an object.
+    // If so, parse the inner JSON string to get the actual object.
+    JsonElement payload;
+    if (request.Payload.Value.ValueKind == JsonValueKind.String)
+    {
+      var inner = request.Payload.Value.GetString()
+          ?? throw new InvalidOperationException("call_service Payload is an empty string");
+      using var innerDoc = JsonDocument.Parse(inner);
+      payload = innerDoc.RootElement.Clone();
+    }
+    else
+    {
+      payload = request.Payload.Value;
+    }
 
     var domain = payload.GetProperty("domain").GetString()
         ?? throw new InvalidOperationException("call_service Payload missing domain");
