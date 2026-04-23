@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -129,6 +130,42 @@ public sealed class HaWebSocketClient : IHaWebSocketClient, IAsyncDisposable
       if (result.Success != true)
         throw new InvalidOperationException($"get_states failed: {result.Error?.Message}");
 
+      return result.Result ?? default;
+    }
+  }
+
+  public async Task<JsonElement> SendCommandAsync(string type, JsonElement? extraProperties,
+      CancellationToken cancellationToken)
+  {
+    var id = Interlocked.Increment(ref _messageId);
+    var tcs = new TaskCompletionSource<HaMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+    _pending[id] = tcs;
+
+    // Build {"id": X, "type": "...", ...extraProperties}
+    using var ms = new MemoryStream();
+    using (var writer = new Utf8JsonWriter(ms))
+    {
+      writer.WriteStartObject();
+      writer.WriteNumber("id", id);
+      writer.WriteString("type", type);
+      if (extraProperties.HasValue && extraProperties.Value.ValueKind == JsonValueKind.Object)
+      {
+        foreach (var prop in extraProperties.Value.EnumerateObject())
+          prop.WriteTo(writer);
+      }
+      writer.WriteEndObject();
+    }
+
+    var json = Encoding.UTF8.GetString(ms.ToArray());
+    await SendRawAsync(json, cancellationToken);
+
+    using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+    cts.CancelAfter(TimeSpan.FromSeconds(30));
+    await using (cts.Token.Register(() => tcs.TrySetCanceled()))
+    {
+      var result = await tcs.Task;
+      if (result.Success != true)
+        throw new InvalidOperationException($"HA command '{type}' failed: {result.Error?.Message}");
       return result.Result ?? default;
     }
   }

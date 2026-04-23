@@ -154,13 +154,16 @@ public sealed class DownlinkWorker : IHostedService
           break;
 
         default:
-          _logger.LogWarning("Unsupported cloud request command: {Command}", request.Command);
-          return;
+          // Generic HA WebSocket passthrough — forwards any HA command type
+          // (e.g. config/area_registry/list, config/floor_registry/list, ...)
+          responseData = await ExecuteGenericCommandAsync(request);
+          break;
       }
 
       var response = new CloudRequestResponse
       {
         TargetConnectionId = request.TargetConnectionId,
+        Command = request.Command,
         Data = responseData
       };
 
@@ -185,25 +188,37 @@ public sealed class DownlinkWorker : IHostedService
     }
   }
 
+  /// <summary>
+  /// Resolves a Payload <see cref="JsonElement"/> that may have been double-serialized as a
+  /// JSON string by the backend. Returns a cloned <see cref="JsonElement"/> of the object,
+  /// or null if the payload is absent/not an object.
+  /// </summary>
+  private static JsonElement? ResolvePayload(JsonElement? raw)
+  {
+    if (!raw.HasValue) return null;
+
+    if (raw.Value.ValueKind == JsonValueKind.String)
+    {
+      var inner = raw.Value.GetString();
+      if (string.IsNullOrEmpty(inner)) return null;
+      using var doc = JsonDocument.Parse(inner);
+      return doc.RootElement.Clone();
+    }
+
+    return raw.Value.ValueKind == JsonValueKind.Object ? raw.Value : null;
+  }
+
+  private async Task<JsonElement> ExecuteGenericCommandAsync(CloudRequest request)
+  {
+    var extraProps = ResolvePayload(request.Payload);
+    _logger.LogInformation("Generic HA WebSocket command: {Type}", request.Command);
+    return await _haClient.SendCommandAsync(request.Command, extraProps, CancellationToken.None);
+  }
+
   private async Task<JsonElement> ExecuteCallServiceAsync(CloudRequest request)
   {
-    if (!request.Payload.HasValue)
-      throw new InvalidOperationException("call_service request missing Payload");
-
-    // The backend may double-serialize Payload as a JSON string instead of an object.
-    // If so, parse the inner JSON string to get the actual object.
-    JsonElement payload;
-    if (request.Payload.Value.ValueKind == JsonValueKind.String)
-    {
-      var inner = request.Payload.Value.GetString()
-          ?? throw new InvalidOperationException("call_service Payload is an empty string");
-      using var innerDoc = JsonDocument.Parse(inner);
-      payload = innerDoc.RootElement.Clone();
-    }
-    else
-    {
-      payload = request.Payload.Value;
-    }
+    var payload = ResolvePayload(request.Payload)
+        ?? throw new InvalidOperationException("call_service request missing or invalid Payload");
 
     var domain = payload.GetProperty("domain").GetString()
         ?? throw new InvalidOperationException("call_service Payload missing domain");

@@ -19,12 +19,16 @@ public sealed class CloudRequest
 }
 
 /// <summary>
-/// Response published on ha/commands/responses.
+/// Response published on devices/{boxId}/responses.
 /// </summary>
 public sealed class CloudRequestResponse
 {
   [JsonPropertyName("TargetConnectionId")]
   public string TargetConnectionId { get; set; } = string.Empty;
+
+  /// <summary>Echo of the original Command so the client can route the response correctly.</summary>
+  [JsonPropertyName("Command")]
+  public string Command { get; set; } = string.Empty;
 
   [JsonPropertyName("Data")]
   public JsonElement Data { get; set; }

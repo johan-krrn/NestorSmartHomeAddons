@@ -18,6 +18,12 @@ public interface IHaWebSocketClient
   /// <summary>Retrieve all entity states from HA via get_states.</summary>
   Task<JsonElement> GetStatesAsync(CancellationToken cancellationToken);
 
+  /// <summary>
+  /// Send an arbitrary HA WebSocket command (e.g. "config/area_registry/list") and return its result.
+  /// Extra properties from <paramref name="extraProperties"/> are merged into the message object.
+  /// </summary>
+  Task<JsonElement> SendCommandAsync(string type, JsonElement? extraProperties, CancellationToken cancellationToken);
+
   /// <summary>Disconnect cleanly.</summary>
   Task DisconnectAsync(CancellationToken cancellationToken);
 }
