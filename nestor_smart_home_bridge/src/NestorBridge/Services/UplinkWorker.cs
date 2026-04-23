@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -52,6 +53,28 @@ public sealed class UplinkWorker : IHostedService
 
   private async Task OnStateChangedAsync(HaEvent haEvent)
   {
+    // ── Raw event streaming → devices/{boxId}/events/state_changed ──
+    try
+    {
+      var rawEventBytes = JsonSerializer.SerializeToUtf8Bytes(haEvent);
+      var eventTopic = Topics.EventsStateChanged(_options.BoxId);
+
+      await _mqtt.PublishAsync(eventTopic, rawEventBytes,
+          MqttQualityOfServiceLevel.AtMostOnce, CancellationToken.None);
+
+      _messageLog.Add(new MessageLogEntry(
+          DateTime.UtcNow, MessageDirection.Outbound, eventTopic,
+          System.Text.Encoding.UTF8.GetString(rawEventBytes)));
+
+      _logger.LogDebug("Raw state_changed event published for {EntityId}",
+          haEvent.Data?.NewState?.EntityId ?? "unknown");
+    }
+    catch (Exception ex)
+    {
+      _logger.LogError(ex, "Failed to publish raw state_changed event");
+    }
+
+    // ── Filtered telemetry → devices/{boxId}/telemetry/state/{entityId} ──
     var result = _translator.Translate(haEvent);
     if (result is null)
       return;

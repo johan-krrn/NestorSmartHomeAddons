@@ -139,20 +139,29 @@ public sealed class DownlinkWorker : IHostedService
     _logger.LogInformation("Cloud request received: Command={Command}, ConnectionId={ConnectionId}",
         request.Command, request.TargetConnectionId);
 
-    if (!string.Equals(request.Command, "get_states", StringComparison.OrdinalIgnoreCase))
-    {
-      _logger.LogWarning("Unsupported cloud request command: {Command}", request.Command);
-      return;
-    }
-
     try
     {
-      var states = await _haClient.GetStatesAsync(CancellationToken.None);
+      JsonElement responseData;
+
+      switch (request.Command.ToLowerInvariant())
+      {
+        case "get_states":
+          responseData = await _haClient.GetStatesAsync(CancellationToken.None);
+          break;
+
+        case "call_service":
+          responseData = await ExecuteCallServiceAsync(request);
+          break;
+
+        default:
+          _logger.LogWarning("Unsupported cloud request command: {Command}", request.Command);
+          return;
+      }
 
       var response = new CloudRequestResponse
       {
         TargetConnectionId = request.TargetConnectionId,
-        Data = states
+        Data = responseData
       };
 
       var responseBytes = JsonSerializer.SerializeToUtf8Bytes(response);
@@ -164,15 +173,54 @@ public sealed class DownlinkWorker : IHostedService
       var responseStr = System.Text.Encoding.UTF8.GetString(responseBytes);
       _messageLog.Add(new MessageLogEntry(
           DateTime.UtcNow, MessageDirection.Outbound, responseTopic,
-          responseStr, "get_states"));
+          responseStr, request.Command));
 
-      _logger.LogInformation("get_states response published for ConnectionId={ConnectionId}",
-          request.TargetConnectionId);
+      _logger.LogInformation("{Command} response published for ConnectionId={ConnectionId}",
+          request.Command, request.TargetConnectionId);
     }
     catch (Exception ex)
     {
-      _logger.LogError(ex, "Failed to handle get_states request for ConnectionId={ConnectionId}",
-          request.TargetConnectionId);
+      _logger.LogError(ex, "Failed to handle {Command} request for ConnectionId={ConnectionId}",
+          request.Command, request.TargetConnectionId);
     }
+  }
+
+  private async Task<JsonElement> ExecuteCallServiceAsync(CloudRequest request)
+  {
+    if (!request.Payload.HasValue)
+      throw new InvalidOperationException("call_service request missing Payload");
+
+    var payload = request.Payload.Value;
+
+    var domain = payload.GetProperty("domain").GetString()
+        ?? throw new InvalidOperationException("call_service Payload missing domain");
+    var service = payload.GetProperty("service").GetString()
+        ?? throw new InvalidOperationException("call_service Payload missing service");
+
+    string? entityId = null;
+    Dictionary<string, object>? serviceData = null;
+
+    if (payload.TryGetProperty("service_data", out var sdEl))
+    {
+      serviceData = JsonSerializer.Deserialize<Dictionary<string, object>>(sdEl);
+    }
+
+    if (payload.TryGetProperty("entity_id", out var eidEl))
+      entityId = eidEl.GetString();
+
+    _logger.LogInformation("Calling HA service {Domain}.{Service} (entity={EntityId})",
+        domain, service, entityId ?? "none");
+
+    var result = await _haClient.CallServiceAsync(domain, service, entityId, serviceData, CancellationToken.None);
+
+    if (result.Success == true)
+      return result.Result ?? default;
+
+    var errorMsg = result.Error?.Message ?? "Service call failed";
+    _logger.LogError("Service call {Domain}.{Service} failed: {Error}", domain, service, errorMsg);
+
+    using var errDoc = JsonDocument.Parse(
+        JsonSerializer.Serialize(new { success = false, error = errorMsg }));
+    return errDoc.RootElement.Clone();
   }
 }

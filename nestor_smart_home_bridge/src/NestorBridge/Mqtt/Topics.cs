@@ -30,6 +30,10 @@ public static class Topics
   public static string CloudResponses(string boxId) =>
       $"devices/{boxId}/responses";
 
+  /// <summary>Topic for publishing raw state_changed events in real time.</summary>
+  public static string EventsStateChanged(string boxId) =>
+      $"devices/{boxId}/events/state_changed";
+
   /// <summary>
   /// Extract the HA MQTT sub-topic from a full downlink topic.
   /// e.g. "devices/mybox/commands/zigbee2mqtt/prise/set" → "zigbee2mqtt/prise/set"

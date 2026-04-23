@@ -38,4 +38,35 @@ public class TopicsTests
   {
     Assert.Equal("devices/nestor-0a1b2c3d/heartbeat", Topics.Heartbeat(BoxId));
   }
+
+  [Fact]
+  public void CloudRequests_ReturnsCorrectTopic()
+  {
+    Assert.Equal("devices/nestor-0a1b2c3d/commands/requests", Topics.CloudRequests(BoxId));
+  }
+
+  [Fact]
+  public void CloudResponses_ReturnsCorrectTopic()
+  {
+    Assert.Equal("devices/nestor-0a1b2c3d/responses", Topics.CloudResponses(BoxId));
+  }
+
+  [Fact]
+  public void EventsStateChanged_ReturnsCorrectTopic()
+  {
+    Assert.Equal("devices/nestor-0a1b2c3d/events/state_changed", Topics.EventsStateChanged(BoxId));
+  }
+
+  [Fact]
+  public void ExtractSubTopic_ReservedRequests_ReturnsNull()
+  {
+    Assert.Null(Topics.ExtractSubTopic(BoxId, "devices/nestor-0a1b2c3d/commands/requests"));
+  }
+
+  [Fact]
+  public void ExtractSubTopic_ValidSubTopic_ReturnsSubTopic()
+  {
+    Assert.Equal("zigbee2mqtt/prise/set",
+        Topics.ExtractSubTopic(BoxId, "devices/nestor-0a1b2c3d/commands/zigbee2mqtt/prise/set"));
+  }
 }

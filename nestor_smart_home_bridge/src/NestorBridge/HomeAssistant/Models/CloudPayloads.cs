@@ -4,12 +4,15 @@ using System.Text.Json.Serialization;
 namespace NestorBridge.HomeAssistant.Models;
 
 /// <summary>
-/// Cloud request received on ha/commands/requests.
+/// Cloud request received on devices/{boxId}/commands/requests.
 /// </summary>
 public sealed class CloudRequest
 {
   [JsonPropertyName("Command")]
   public string Command { get; set; } = string.Empty;
+
+  [JsonPropertyName("Payload")]
+  public JsonElement? Payload { get; set; }
 
   [JsonPropertyName("TargetConnectionId")]
   public string TargetConnectionId { get; set; } = string.Empty;
