@@ -25,6 +25,7 @@ RESPONSE=$(curl -s -X POST "$API_URL/renew" \
   --key $CERT_DIR/device.key \
   -H "Content-Type: application/json" \
   -d "{
+    \"token\": \"$TOKEN\",
     \"csr\": \"$CSR\"
   }")
 
