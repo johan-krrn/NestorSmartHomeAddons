@@ -28,16 +28,20 @@ RUN DOTNET_ARCH=$([ "${TARGETARCH}" = "amd64" ] && echo "x64" || echo "${TARGETA
 FROM ${BUILD_FROM}
 
 # Install .NET 8 runtime on top of the HA base image
+# dotnet-install.sh auto-detects architecture (amd64, arm64, arm)
+# which makes it work on aarch64 (Raspberry Pi 4) unlike the MS apt repo
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   curl \
   ca-certificates \
-  && curl -fsSL https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb \
-  -o /tmp/ms-prod.deb \
-  && dpkg -i /tmp/ms-prod.deb \
-  && rm /tmp/ms-prod.deb \
-  && apt-get update \
-  && apt-get install -y --no-install-recommends aspnetcore-runtime-8.0 \
+  libicu72 \
+  libssl3 \
+  zlib1g \
+  && curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
+  && chmod +x /tmp/dotnet-install.sh \
+  && /tmp/dotnet-install.sh --runtime aspnetcore --channel 8.0 --install-dir /usr/share/dotnet \
+  && ln -sf /usr/share/dotnet/dotnet /usr/local/bin/dotnet \
+  && rm /tmp/dotnet-install.sh \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
