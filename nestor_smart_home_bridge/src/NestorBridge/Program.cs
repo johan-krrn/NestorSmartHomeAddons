@@ -1,8 +1,10 @@
+using System.Net.Http.Headers;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NestorBridge.Configuration;
 using NestorBridge.HomeAssistant;
 using NestorBridge.Mqtt;
@@ -42,7 +44,26 @@ builder.WebHost.UseUrls("http://0.0.0.0:8099");
 // ── Services ─────────────────────────────────────────────────────────
 builder.Services.AddSingleton<MessageLog>();
 builder.Services.AddSingleton<IMqttBridge, MqttBridge>();
+builder.Services.AddSingleton<ILocalMqttBridge, LocalMqttBridge>();
 builder.Services.AddSingleton<IHaWebSocketClient, HaWebSocketClient>();
+
+// ── HTTP client for HA Config REST API ───────────────────────────────
+// The HttpClient is created once (singleton lifetime is acceptable here:
+// the target is http://supervisor/core — a static internal address with no DNS rotation).
+var haToken = Environment.GetEnvironmentVariable("SUPERVISOR_TOKEN")
+              ?? Environment.GetEnvironmentVariable("HASSIO_TOKEN")
+              ?? Environment.GetEnvironmentVariable("HA_TOKEN")
+              ?? string.Empty;
+var haRestBaseUrl = Environment.GetEnvironmentVariable("HA_REST_API_URL") ?? "http://supervisor/core/api/";
+builder.Services.AddSingleton<IHaRestClient>(sp =>
+{
+  var httpClient = new HttpClient { BaseAddress = new Uri(haRestBaseUrl) };
+  if (!string.IsNullOrEmpty(haToken))
+    httpClient.DefaultRequestHeaders.Authorization =
+        new AuthenticationHeaderValue("Bearer", haToken);
+  return new HaRestClient(httpClient, sp.GetRequiredService<ILogger<HaRestClient>>());
+});
+
 builder.Services.AddSingleton<HaServiceCaller>();
 builder.Services.AddSingleton<CommandTranslator>();
 builder.Services.AddSingleton<TelemetryTranslator>();
@@ -52,6 +73,7 @@ builder.Services.AddHostedService<BootstrapService>();
 builder.Services.AddHostedService<DownlinkWorker>();
 builder.Services.AddHostedService<UplinkWorker>();
 builder.Services.AddHostedService<HeartbeatWorker>();
+builder.Services.AddHostedService<PairingRelayWorker>();
 
 var app = builder.Build();
 
@@ -106,13 +128,22 @@ await app.RunAsync();
 file sealed class BootstrapService : IHostedService
 {
   private readonly IMqttBridge _mqtt;
+  private readonly ILocalMqttBridge _localMqtt;
   private readonly IHaWebSocketClient _haClient;
+  private readonly BridgeOptions _options;
   private readonly ILogger<BootstrapService> _logger;
 
-  public BootstrapService(IMqttBridge mqtt, IHaWebSocketClient haClient, ILogger<BootstrapService> logger)
+  public BootstrapService(
+      IMqttBridge mqtt,
+      ILocalMqttBridge localMqtt,
+      IHaWebSocketClient haClient,
+      IOptions<BridgeOptions> options,
+      ILogger<BootstrapService> logger)
   {
     _mqtt = mqtt;
+    _localMqtt = localMqtt;
     _haClient = haClient;
+    _options = options.Value;
     _logger = logger;
   }
 
@@ -124,12 +155,21 @@ file sealed class BootstrapService : IHostedService
     _logger.LogInformation("HA WebSocket connected");
 
     await _mqtt.ConnectAsync(cancellationToken);
-    _logger.LogInformation("MQTT connected");
+    _logger.LogInformation("Cloud MQTT connected");
+
+    if (_options.LocalMqtt.Enabled)
+    {
+      await _localMqtt.ConnectAsync(cancellationToken);
+      _logger.LogInformation("Local MQTT connected ({Host}:{Port})",
+          _options.LocalMqtt.Host, _options.LocalMqtt.Port);
+    }
   }
 
   public async Task StopAsync(CancellationToken cancellationToken)
   {
     _logger.LogInformation("Nestor Bridge shutting down...");
+    if (_options.LocalMqtt.Enabled)
+      await _localMqtt.DisconnectAsync(cancellationToken);
     await _mqtt.DisconnectAsync(cancellationToken);
     await _haClient.DisconnectAsync(cancellationToken);
   }

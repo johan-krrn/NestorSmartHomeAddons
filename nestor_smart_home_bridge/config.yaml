@@ -1,11 +1,12 @@
 name: "Nestor Smart Home Bridge"
-version: "1.1.2"
+version: "1.2.0"
 slug: "nestor_smart_home_bridge"
 description: "Bridge MQTT v5 <-> Home Assistant WebSocket for Nestor cloud"
 url: "https://github.com/johan-krrn/NestorSmartHomeAddons"
 arch:
   - aarch64
   - amd64
+  - armv7
 startup: services
 boot: auto
 init: false
@@ -38,6 +39,16 @@ options:
       - "sensor"
       - "climate"
       - "binary_sensor"
+  local_mqtt:
+    enabled: false
+    host: "core-mosquitto"
+    port: 1883
+    username: ""
+    password: ""
+    topics:
+      - "zigbee2mqtt/bridge/logging"
+      - "zigbee2mqtt/bridge/event"
+      - "zigbee2mqtt/bridge/state"
 schema:
   mqtt_host: str
   mqtt_port: port
@@ -54,6 +65,14 @@ schema:
   ha_ws_endpoint: "str?"
   telemetry_filter:
     domains:
+      - str
+  local_mqtt:
+    enabled: bool
+    host: str
+    port: port
+    username: "str?"
+    password: "str?"
+    topics:
       - str
 map:
   - ssl:ro

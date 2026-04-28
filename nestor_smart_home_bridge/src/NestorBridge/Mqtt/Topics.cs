@@ -34,6 +34,10 @@ public static class Topics
   public static string EventsStateChanged(string boxId) =>
       $"devices/{boxId}/events/state_changed";
 
+  /// <summary>Topic for publishing pairing/bridge events relayed from local Mosquitto.</summary>
+  public static string EventsPairingStatus(string boxId) =>
+      $"devices/{boxId}/events/pairing_status";
+
   /// <summary>
   /// Extract the HA MQTT sub-topic from a full downlink topic.
   /// e.g. "devices/mybox/commands/zigbee2mqtt/prise/set" → "zigbee2mqtt/prise/set"

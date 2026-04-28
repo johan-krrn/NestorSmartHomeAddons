@@ -161,11 +161,19 @@
               "version": "[8.0.25, 8.0.25]"
             },
             {
+              "name": "Microsoft.AspNetCore.App.Runtime.linux-arm",
+              "version": "[8.0.25, 8.0.25]"
+            },
+            {
               "name": "Microsoft.AspNetCore.App.Runtime.linux-arm64",
               "version": "[8.0.25, 8.0.25]"
             },
             {
               "name": "Microsoft.AspNetCore.App.Runtime.linux-x64",
+              "version": "[8.0.25, 8.0.25]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.linux-arm",
               "version": "[8.0.25, 8.0.25]"
             },
             {
@@ -182,6 +190,10 @@
             },
             {
               "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.25, 8.0.25]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Runtime.linux-arm",
               "version": "[8.0.25, 8.0.25]"
             },
             {
@@ -209,6 +221,9 @@
         }
       },
       "runtimes": {
+        "linux-arm": {
+          "#import": []
+        },
         "linux-arm64": {
           "#import": []
         },

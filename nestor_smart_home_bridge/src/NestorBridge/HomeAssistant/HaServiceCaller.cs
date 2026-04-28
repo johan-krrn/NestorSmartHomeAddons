@@ -9,11 +9,20 @@ namespace NestorBridge.HomeAssistant;
 public sealed class HaServiceCaller
 {
   private readonly IHaWebSocketClient _client;
+  private readonly IHaRestClient _restClient;
   private readonly ILogger<HaServiceCaller> _logger;
 
-  public HaServiceCaller(IHaWebSocketClient client, ILogger<HaServiceCaller> logger)
+  // Actions on the "automation" domain that are routed to the REST API instead of WebSocket.
+  private static readonly HashSet<string> RestAutomationActions =
+      new(StringComparer.OrdinalIgnoreCase) { "create", "update", "delete" };
+
+  public HaServiceCaller(
+      IHaWebSocketClient client,
+      IHaRestClient restClient,
+      ILogger<HaServiceCaller> logger)
   {
     _client = client;
+    _restClient = restClient;
     _logger = logger;
   }
 
@@ -32,6 +41,14 @@ public sealed class HaServiceCaller
 
     var domain = entityId[..dotIdx];
     var service = command.Action;
+
+    // Smart routing: automation CRUD → HA REST API; everything else → WebSocket
+    if (string.Equals(domain, "automation", StringComparison.OrdinalIgnoreCase)
+        && RestAutomationActions.Contains(service))
+    {
+      return await ExecuteAutomationRestAsync(
+          command, entityId[(dotIdx + 1)..], service, cancellationToken);
+    }
 
     _logger.LogInformation("Calling HA service {Domain}.{Service} on {Entity}",
         domain, service, entityId);
@@ -69,6 +86,29 @@ public sealed class HaServiceCaller
           domain, service, entityId);
       return (false, null, ex.Message);
     }
+  }
+
+  /// <summary>
+  /// Routes automation create/update/delete commands to the HA Config REST API.
+  /// </summary>
+  private async Task<(bool Success, string? ContextId, string? Error)> ExecuteAutomationRestAsync(
+      CloudCommand command, string automationId, string action, CancellationToken cancellationToken)
+  {
+    _logger.LogInformation("REST routing: {Action} automation {Id}", action, automationId);
+
+    if (string.Equals(action, "delete", StringComparison.OrdinalIgnoreCase))
+    {
+      var (ok, err) = await _restClient.DeleteAutomationAsync(automationId, cancellationToken);
+      return (ok, null, err);
+    }
+
+    // create or update
+    if (command.Parameters is null || command.Parameters.Count == 0)
+      return (false, null, "Automation config is required in 'parameters' for create/update");
+
+    var (success, error) = await _restClient.CreateOrUpdateAutomationAsync(
+        automationId, command.Parameters, cancellationToken);
+    return (success, null, error);
   }
 
   /// <summary>
