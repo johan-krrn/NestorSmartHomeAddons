@@ -86,7 +86,17 @@ if (Directory.Exists(wwwroot))
   app.UseStaticFiles(new StaticFileOptions
   {
     FileProvider = new PhysicalFileProvider(wwwroot),
-    RequestPath = ""
+    RequestPath = "",
+    OnPrepareResponse = ctx =>
+    {
+      // Never cache the HTML shell — always serve the latest version
+      if (ctx.File.Name.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
+      {
+        ctx.Context.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+        ctx.Context.Response.Headers.Pragma = "no-cache";
+        ctx.Context.Response.Headers.Expires = "0";
+      }
+    }
   });
 }
 
@@ -185,10 +195,14 @@ app.MapGet("/api/entities/search", async (string? q, IHaWebSocketClient haClient
   return Results.Json(results, jsonOpts);
 });
 
-// GET / — serve the dashboard
-app.MapFallbackToFile("index.html", new StaticFileOptions
+// GET / — serve the dashboard (no-cache so the browser never serves a stale shell)
+app.MapFallback(async (HttpContext ctx) =>
 {
-  FileProvider = new PhysicalFileProvider(wwwroot)
+  ctx.Response.ContentType = "text/html; charset=utf-8";
+  ctx.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+  ctx.Response.Headers.Pragma = "no-cache";
+  ctx.Response.Headers.Expires = "0";
+  await ctx.Response.SendFileAsync(Path.Combine(wwwroot, "index.html"));
 });
 
 await app.RunAsync();
