@@ -24,6 +24,7 @@ public sealed class DownlinkWorker : IHostedService
   private readonly CommandTranslator _translator;
   private readonly BridgeOptions _options;
   private readonly MessageLog _messageLog;
+  private readonly ExposedEntitiesStore _exposedEntities;
   private readonly ILogger<DownlinkWorker> _logger;
 
   public DownlinkWorker(
@@ -33,6 +34,7 @@ public sealed class DownlinkWorker : IHostedService
       CommandTranslator translator,
       IOptions<BridgeOptions> options,
       MessageLog messageLog,
+      ExposedEntitiesStore exposedEntities,
       ILogger<DownlinkWorker> logger)
   {
     _mqtt = mqtt;
@@ -41,6 +43,7 @@ public sealed class DownlinkWorker : IHostedService
     _translator = translator;
     _options = options.Value;
     _messageLog = messageLog;
+    _exposedEntities = exposedEntities;
     _logger = logger;
   }
 
@@ -151,6 +154,14 @@ public sealed class DownlinkWorker : IHostedService
 
         case "call_service":
           responseData = await ExecuteCallServiceAsync(request);
+          break;
+
+        case "get_exposed_entities":
+          var entities = _exposedEntities.GetAll();
+          using (var doc = JsonDocument.Parse(JsonSerializer.Serialize(entities)))
+          {
+            responseData = doc.RootElement.Clone();
+          }
           break;
 
         default:

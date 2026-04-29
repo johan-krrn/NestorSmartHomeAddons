@@ -7,15 +7,23 @@
   <title>Nestor Bridge</title>
   <style>
     :root {
-      --bg: #1c1c1c;
-      --surface: #252525;
-      --border: #3a3a3a;
-      --text: #e0e0e0;
-      --text-dim: #888;
-      --inbound: #4fc3f7;
-      --outbound: #81c784;
-      --error: #e57373;
-      --accent: #64b5f6;
+      --bg: #f5f5f5;
+      --surface: #ffffff;
+      --border: #e0e0e0;
+      --text: #212121;
+      --text-dim: #757575;
+      --inbound: #1976d2;
+      --outbound: #388e3c;
+      --error: #d32f2f;
+      --accent: #1565c0;
+      --accent-light: #e3f2fd;
+      --success: #4caf50;
+      --warning: #ff9800;
+      --sidebar-bg: #1e293b;
+      --sidebar-text: #e2e8f0;
+      --sidebar-active: #3b82f6;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     * {
@@ -29,34 +37,209 @@
       background: var(--bg);
       color: var(--text);
       font-size: 14px;
-      line-height: 1.4;
+      line-height: 1.5;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
     }
 
-    header {
+    /* ── Sidebar ──────────────────────────────── */
+    .sidebar {
+      width: 220px;
+      background: var(--sidebar-bg);
+      color: var(--sidebar-text);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-brand {
+      padding: 20px 16px;
+      font-size: 16px;
+      font-weight: 700;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      gap: 8px;
     }
 
-    header h1 {
-      font-size: 16px;
+    .sidebar-nav {
+      flex: 1;
+      padding: 12px 0;
+    }
+
+    .sidebar-nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      color: var(--sidebar-text);
+      text-decoration: none;
+      font-size: 14px;
+      border-radius: 0;
+      transition: background 0.15s;
+      cursor: pointer;
+    }
+
+    .sidebar-nav a:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .sidebar-nav a.active {
+      background: var(--sidebar-active);
+      color: #fff;
+      font-weight: 500;
+    }
+
+    .sidebar-nav a .icon {
+      font-size: 18px;
+      width: 24px;
+      text-align: center;
+    }
+
+    /* ── Main content ─────────────────────────── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .main-header {
+      padding: 16px 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .main-header h2 {
+      font-size: 18px;
       font-weight: 600;
     }
 
-    .stats {
+    .page {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    /* ── Home page ────────────────────────────── */
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .status-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .status-card .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .status-card .card-title {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .status-badge.connected {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .status-badge.disconnected {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .status-badge.connecting {
+      background: #fff3e0;
+      color: #e65100;
+    }
+
+    .status-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .status-card .card-detail {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    /* ── Activity page ────────────────────────── */
+    .activity-toolbar {
+      display: flex;
+      gap: 8px;
+      padding: 12px 0;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .activity-toolbar input,
+    .activity-toolbar select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .activity-toolbar input {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .activity-toolbar button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .activity-toolbar button:hover {
+      background: var(--bg);
+    }
+
+    .activity-stats {
       display: flex;
       gap: 16px;
       font-size: 12px;
       color: var(--text-dim);
+      margin-left: auto;
     }
 
-    .stats .dot {
+    .activity-stats .dot {
       display: inline-block;
       width: 8px;
       height: 8px;
@@ -72,72 +255,32 @@
       background: var(--outbound);
     }
 
-    .dot-connected {
-      background: #4caf50;
-    }
-
-    .dot-disconnected {
-      background: var(--error);
-    }
-
-    .toolbar {
-      display: flex;
-      gap: 8px;
-      padding: 8px 16px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .toolbar input,
-    .toolbar select {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-    }
-
-    .toolbar input {
-      flex: 1;
-      min-width: 200px;
-    }
-
-    .toolbar button {
-      background: var(--border);
-      border: none;
-      color: var(--text);
-      padding: 4px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-
-    .toolbar button:hover {
-      background: #555;
-    }
-
     #message-list {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
       overflow-y: auto;
-      padding: 0;
-      height: calc(100vh - 105px);
+      max-height: calc(100vh - 220px);
     }
 
     .msg {
       display: grid;
       grid-template-columns: 90px 70px 1fr auto;
       gap: 8px;
-      padding: 6px 16px;
+      padding: 8px 16px;
       border-bottom: 1px solid var(--border);
-      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
       font-size: 12px;
       align-items: start;
+      cursor: pointer;
+    }
+
+    .msg:last-child {
+      border-bottom: none;
     }
 
     .msg:hover {
-      background: rgba(255, 255, 255, 0.03);
+      background: var(--accent-light);
     }
 
     .msg .time {
@@ -187,10 +330,12 @@
       overflow: hidden;
       transition: max-height 0.2s;
       padding-left: 90px;
+      font-size: 11px;
     }
 
     .msg.expanded .payload {
       max-height: 400px;
+      padding-top: 6px;
     }
 
     .empty-state {
@@ -202,62 +347,414 @@
       font-style: italic;
     }
 
-    @media (max-width: 600px) {
-      .msg {
-        grid-template-columns: 60px 50px 1fr;
-        font-size: 11px;
-        padding: 4px 8px;
+    /* ── Entities page ────────────────────────── */
+    .entities-list {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .entity-row {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+
+    .entity-row:last-child {
+      border-bottom: none;
+    }
+
+    .entity-row .entity-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--accent-light);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: var(--accent);
+    }
+
+    .entity-row .entity-info {
+      flex: 1;
+    }
+
+    .entity-row .entity-id {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .entity-row .entity-name {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .entity-row .entity-domain {
+      font-size: 11px;
+      background: var(--accent-light);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 500;
+    }
+
+    .entity-row .btn-remove {
+      background: none;
+      border: none;
+      color: var(--error);
+      cursor: pointer;
+      font-size: 18px;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .entity-row .btn-remove:hover {
+      background: #ffebee;
+    }
+
+    /* FAB */
+    .fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      font-size: 28px;
+      cursor: pointer;
+      box-shadow: var(--shadow-lg);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s;
+    }
+
+    .fab:hover {
+      transform: scale(1.05);
+    }
+
+    .fab.visible {
+      display: flex;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--surface);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-header h3 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .modal-header .btn-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--text-dim);
+      padding: 4px;
+    }
+
+    .modal-body {
+      padding: 16px 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .modal-search {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .modal-search:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.1);
+    }
+
+    .search-results {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .search-result-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      gap: 10px;
+    }
+
+    .search-result-item:hover {
+      background: var(--accent-light);
+    }
+
+    .search-result-item .result-id {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .search-result-item .result-name {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .search-loading {
+      text-align: center;
+      padding: 20px;
+      color: var(--text-dim);
+    }
+
+    /* ── Responsive ───────────────────────────── */
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 60px;
       }
 
-      .msg .status {
+      .sidebar-brand span,
+      .sidebar-nav a span:not(.icon) {
         display: none;
+      }
+
+      .sidebar-nav a {
+        justify-content: center;
+        padding: 12px;
+      }
+
+      .page {
+        padding: 16px;
       }
     }
   </style>
 </head>
 
 <body>
-  <header>
-    <h1>🌉 Nestor Bridge</h1>
-    <div class="stats">
-      <span id="conn-status"><span class="dot dot-disconnected"></span>Connecting…</span>
-      <span><span class="dot dot-in"></span>In: <span id="count-in">0</span></span>
-      <span><span class="dot dot-out"></span>Out: <span id="count-out">0</span></span>
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <span>🌉</span>
+      <span>Nestor Bridge</span>
     </div>
-  </header>
-  <div class="toolbar">
-    <input type="text" id="filter" placeholder="Filter by topic or payload…">
-    <select id="dir-filter">
-      <option value="all">All</option>
-      <option value="in">↓ Inbound</option>
-      <option value="out">↑ Outbound</option>
-    </select>
-    <button id="btn-clear">Clear</button>
-    <label style="font-size:12px;color:var(--text-dim)">
-      <input type="checkbox" id="auto-scroll" checked> Auto-scroll
-    </label>
+    <div class="sidebar-nav">
+      <a data-page="home" class="active">
+        <span class="icon">🏠</span>
+        <span>Accueil</span>
+      </a>
+      <a data-page="activity">
+        <span class="icon">📡</span>
+        <span>Activité</span>
+      </a>
+      <a data-page="entities">
+        <span class="icon">💡</span>
+        <span>Entités</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <div class="main">
+    <div class="main-header">
+      <h2 id="page-title">Accueil</h2>
+    </div>
+
+    <!-- ═══ Home Page ═══ -->
+    <div class="page active" id="page-home">
+      <div class="status-grid" id="status-grid">
+        <div class="status-card">
+          <div class="card-header">
+            <span class="card-title">Home Assistant WebSocket</span>
+            <span class="status-badge disconnected" id="status-ha-ws">
+              <span class="dot"></span>Déconnecté
+            </span>
+          </div>
+          <div class="card-detail">Communication avec Home Assistant</div>
+        </div>
+        <div class="status-card">
+          <div class="card-header">
+            <span class="card-title">Event Grid MQTT</span>
+            <span class="status-badge disconnected" id="status-cloud-mqtt">
+              <span class="dot"></span>Déconnecté
+            </span>
+          </div>
+          <div class="card-detail">Connexion cloud Azure Event Grid</div>
+        </div>
+        <div class="status-card">
+          <div class="card-header">
+            <span class="card-title">Mosquitto (local)</span>
+            <span class="status-badge disconnected" id="status-local-mqtt">
+              <span class="dot"></span>Déconnecté
+            </span>
+          </div>
+          <div class="card-detail">Broker MQTT local (zigbee2mqtt)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Activity Page ═══ -->
+    <div class="page" id="page-activity">
+      <div class="activity-toolbar">
+        <input type="text" id="filter" placeholder="Filtrer par topic ou payload…">
+        <select id="dir-filter">
+          <option value="all">Tous</option>
+          <option value="in">↓ Entrant</option>
+          <option value="out">↑ Sortant</option>
+        </select>
+        <button id="btn-clear">Effacer</button>
+        <label style="font-size:12px;color:var(--text-dim)">
+          <input type="checkbox" id="auto-scroll" checked> Auto-scroll
+        </label>
+        <div class="activity-stats">
+          <span><span class="dot dot-in"></span>In: <span id="count-in">0</span></span>
+          <span><span class="dot dot-out"></span>Out: <span id="count-out">0</span></span>
+        </div>
+      </div>
+      <div id="message-list">
+        <div class="empty-state" id="empty">En attente de messages…</div>
+      </div>
+    </div>
+
+    <!-- ═══ Entities Page ═══ -->
+    <div class="page" id="page-entities">
+      <div class="entities-list" id="entities-list">
+        <div class="empty-state" id="entities-empty">Aucune entité exposée</div>
+      </div>
+    </div>
   </div>
-  <div id="message-list">
-    <div class="empty-state" id="empty">Waiting for messages…</div>
+
+  <!-- FAB for entities page -->
+  <button class="fab" id="fab-add" title="Ajouter une entité">+</button>
+
+  <!-- Modal: Add Entity -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Ajouter une entité</h3>
+        <button class="btn-close" id="modal-close">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" class="modal-search" id="entity-search" placeholder="Rechercher une entité…"
+          autocomplete="off">
+        <div class="search-results" id="search-results">
+          <div class="search-loading">Tapez pour rechercher…</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     (function () {
+      const basePath = document.location.pathname.replace(/\/+$/, '');
+
+      // ── Navigation ──────────────────────────────
+      const pages = document.querySelectorAll('.page');
+      const navLinks = document.querySelectorAll('.sidebar-nav a');
+      const pageTitle = document.getElementById('page-title');
+      const fab = document.getElementById('fab-add');
+
+      const pageTitles = { home: 'Accueil', activity: 'Activité', entities: 'Entités exposées' };
+
+      function navigate(pageId) {
+        pages.forEach(p => p.classList.remove('active'));
+        navLinks.forEach(a => a.classList.remove('active'));
+        document.getElementById('page-' + pageId).classList.add('active');
+        document.querySelector(`[data-page="${pageId}"]`).classList.add('active');
+        pageTitle.textContent = pageTitles[pageId] || '';
+        fab.classList.toggle('visible', pageId === 'entities');
+      }
+
+      navLinks.forEach(a => {
+        a.addEventListener('click', () => navigate(a.dataset.page));
+      });
+
+      // ── Home: Connection Status ─────────────────
+      const statusMap = {
+        ha_websocket: 'status-ha-ws',
+        cloud_mqtt: 'status-cloud-mqtt',
+        local_mqtt: 'status-local-mqtt'
+      };
+
+      const stateLabels = { 0: 'Déconnecté', 1: 'Connexion…', 2: 'Connecté' };
+      const stateClasses = { 0: 'disconnected', 1: 'connecting', 2: 'connected' };
+
+      function refreshStatus() {
+        fetch(basePath + '/api/status')
+          .then(r => r.json())
+          .then(data => {
+            data.forEach(s => {
+              const elId = statusMap[Object.keys(statusMap).find(k =>
+                s.name.toLowerCase().includes(k.replace('_', ' ').replace('_', ' '))) || ''];
+              // Match by order
+              const idx = data.indexOf(s);
+              const keys = Object.values(statusMap);
+              const el = document.getElementById(keys[idx]);
+              if (el) {
+                const state = s.state;
+                el.className = 'status-badge ' + stateClasses[state];
+                el.innerHTML = `<span class="dot"></span>${stateLabels[state]}`;
+              }
+            });
+          })
+          .catch(() => { });
+      }
+
+      refreshStatus();
+      setInterval(refreshStatus, 5000);
+
+      // ── Activity: Messages ──────────────────────
       const list = document.getElementById('message-list');
       const empty = document.getElementById('empty');
       const filterInput = document.getElementById('filter');
       const dirFilter = document.getElementById('dir-filter');
       const btnClear = document.getElementById('btn-clear');
       const autoScroll = document.getElementById('auto-scroll');
-      const connStatus = document.getElementById('conn-status');
       const countIn = document.getElementById('count-in');
       const countOut = document.getElementById('count-out');
 
       let messages = [];
       let inCount = 0, outCount = 0;
-
-      // Detect ingress base path
-      const basePath = document.location.pathname.replace(/\/+$/, '');
 
       function formatTime(ts) {
         const d = new Date(ts);
@@ -266,9 +763,8 @@
       }
 
       function formatPayload(raw) {
-        try {
-          return JSON.stringify(JSON.parse(raw), null, 2);
-        } catch { return raw; }
+        try { return JSON.stringify(JSON.parse(raw), null, 2); }
+        catch { return raw; }
       }
 
       function createRow(msg) {
@@ -287,12 +783,12 @@
         }
 
         el.innerHTML = `
-      <span class="time">${formatTime(msg.timestamp)}</span>
-      <span class="dir ${dir}">${dirLabel}</span>
-      <span class="topic">${msg.topic}</span>
-      ${statusHtml}
-      <div class="payload">${formatPayload(msg.payload)}</div>
-    `;
+          <span class="time">${formatTime(msg.timestamp)}</span>
+          <span class="dir ${dir}">${dirLabel}</span>
+          <span class="topic">${msg.topic}</span>
+          ${statusHtml}
+          <div class="payload">${formatPayload(msg.payload)}</div>
+        `;
         el.addEventListener('click', () => el.classList.toggle('expanded'));
         return el;
       }
@@ -311,7 +807,9 @@
       dirFilter.addEventListener('change', applyFilter);
       btnClear.addEventListener('click', () => {
         messages = [];
-        list.innerHTML = '<div class="empty-state" id="empty">Waiting for messages…</div>';
+        inCount = 0; outCount = 0;
+        countIn.textContent = '0'; countOut.textContent = '0';
+        list.innerHTML = '<div class="empty-state" id="empty">En attente de messages…</div>';
       });
 
       function addMessage(msg) {
@@ -340,32 +838,144 @@
       // Load existing messages
       fetch(basePath + '/api/messages')
         .then(r => r.json())
-        .then(data => {
-          data.forEach(addMessage);
-        })
+        .then(data => data.forEach(addMessage))
         .catch(err => console.error('Failed to load history:', err));
 
-      // SSE for real-time updates
+      // SSE for real-time
       function connectSSE() {
         const es = new EventSource(basePath + '/api/messages/stream');
+        es.addEventListener('message', (e) => addMessage(JSON.parse(e.data)));
+        es.onerror = () => { es.close(); setTimeout(connectSSE, 3000); };
+      }
+      connectSSE();
 
-        es.onopen = () => {
-          connStatus.innerHTML = '<span class="dot dot-connected"></span>Connected';
-        };
+      // ── Entities ────────────────────────────────
+      const entitiesList = document.getElementById('entities-list');
+      const entitiesEmpty = document.getElementById('entities-empty');
+      const modalOverlay = document.getElementById('modal-overlay');
+      const modalClose = document.getElementById('modal-close');
+      const entitySearch = document.getElementById('entity-search');
+      const searchResults = document.getElementById('search-results');
 
-        es.addEventListener('message', (e) => {
-          const msg = JSON.parse(e.data);
-          addMessage(msg);
-        });
+      let exposedEntities = [];
 
-        es.onerror = () => {
-          connStatus.innerHTML = '<span class="dot dot-disconnected"></span>Reconnecting…';
-          es.close();
-          setTimeout(connectSSE, 3000);
-        };
+      function getDomainIcon(domain) {
+        const icons = { light: '💡', switch: '🔌', sensor: '🌡️', binary_sensor: '📟', climate: '❄️', cover: '🪟', fan: '🌀', media_player: '🎵', camera: '📷', lock: '🔒', alarm_control_panel: '🚨', automation: '⚙️' };
+        return icons[domain] || '📦';
       }
 
-      connectSSE();
+      function renderEntities() {
+        if (exposedEntities.length === 0) {
+          entitiesList.innerHTML = '<div class="empty-state">Aucune entité exposée</div>';
+          return;
+        }
+        entitiesList.innerHTML = exposedEntities.map(e => `
+          <div class="entity-row" data-entity-id="${e.entityId}">
+            <div class="entity-icon">${getDomainIcon(e.domain)}</div>
+            <div class="entity-info">
+              <div class="entity-id">${e.entityId}</div>
+              <div class="entity-name">${e.friendlyName || ''}</div>
+            </div>
+            <span class="entity-domain">${e.domain || ''}</span>
+            <button class="btn-remove" title="Retirer">×</button>
+          </div>
+        `).join('');
+
+        entitiesList.querySelectorAll('.btn-remove').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const row = btn.closest('.entity-row');
+            const entityId = row.dataset.entityId;
+            removeEntity(entityId);
+          });
+        });
+      }
+
+      function loadEntities() {
+        fetch(basePath + '/api/entities/exposed')
+          .then(r => r.json())
+          .then(data => { exposedEntities = data; renderEntities(); })
+          .catch(() => { });
+      }
+
+      function removeEntity(entityId) {
+        fetch(basePath + '/api/entities/exposed/' + encodeURIComponent(entityId), { method: 'DELETE' })
+          .then(() => {
+            exposedEntities = exposedEntities.filter(e => e.entityId !== entityId);
+            renderEntities();
+          });
+      }
+
+      function addEntity(entityId, friendlyName) {
+        fetch(basePath + '/api/entities/exposed', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ entityId, friendlyName })
+        })
+          .then(r => r.json())
+          .then(entity => {
+            exposedEntities.push(entity);
+            renderEntities();
+            modalOverlay.classList.remove('open');
+            entitySearch.value = '';
+            searchResults.innerHTML = '<div class="search-loading">Tapez pour rechercher…</div>';
+          })
+          .catch(() => { });
+      }
+
+      loadEntities();
+
+      // Modal
+      fab.addEventListener('click', () => {
+        modalOverlay.classList.add('open');
+        setTimeout(() => entitySearch.focus(), 100);
+      });
+      modalClose.addEventListener('click', () => modalOverlay.classList.remove('open'));
+      modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) modalOverlay.classList.remove('open');
+      });
+
+      // Entity search with debounce
+      let searchTimeout;
+      entitySearch.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        const q = entitySearch.value.trim();
+        if (q.length < 2) {
+          searchResults.innerHTML = '<div class="search-loading">Tapez au moins 2 caractères…</div>';
+          return;
+        }
+        searchResults.innerHTML = '<div class="search-loading">Recherche…</div>';
+        searchTimeout = setTimeout(() => {
+          fetch(basePath + '/api/entities/search?q=' + encodeURIComponent(q))
+            .then(r => r.json())
+            .then(results => {
+              if (results.length === 0) {
+                searchResults.innerHTML = '<div class="search-loading">Aucun résultat</div>';
+                return;
+              }
+              const alreadyExposed = new Set(exposedEntities.map(e => e.entityId));
+              searchResults.innerHTML = results
+                .filter(r => !alreadyExposed.has(r.entityId))
+                .map(r => `
+                  <div class="search-result-item" data-entity-id="${r.entityId}" data-name="${r.friendlyName || ''}">
+                    <div>
+                      <div class="result-id">${r.entityId}</div>
+                      <div class="result-name">${r.friendlyName || ''}</div>
+                    </div>
+                  </div>
+                `).join('') || '<div class="search-loading">Toutes déjà exposées</div>';
+
+              searchResults.querySelectorAll('.search-result-item').forEach(item => {
+                item.addEventListener('click', () => {
+                  addEntity(item.dataset.entityId, item.dataset.name);
+                });
+              });
+            })
+            .catch(() => {
+              searchResults.innerHTML = '<div class="search-loading">Erreur de recherche</div>';
+            });
+        }, 300);
+      });
+
     })();
   </script>
 </body>

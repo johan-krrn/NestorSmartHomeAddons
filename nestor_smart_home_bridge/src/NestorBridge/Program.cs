@@ -43,6 +43,8 @@ builder.WebHost.UseUrls("http://0.0.0.0:8099");
 
 // ── Services ─────────────────────────────────────────────────────────
 builder.Services.AddSingleton<MessageLog>();
+builder.Services.AddSingleton<ConnectionStatusTracker>();
+builder.Services.AddSingleton<ExposedEntitiesStore>();
 builder.Services.AddSingleton<IMqttBridge, MqttBridge>();
 builder.Services.AddSingleton<ILocalMqttBridge, LocalMqttBridge>();
 builder.Services.AddSingleton<IHaWebSocketClient, HaWebSocketClient>();
@@ -114,6 +116,75 @@ app.MapGet("/api/messages/stream", async (MessageLog log, HttpContext ctx, Cance
   }
 });
 
+// GET /api/status — connection statuses
+app.MapGet("/api/status", (ConnectionStatusTracker tracker) =>
+{
+  return Results.Json(tracker.GetAll(), jsonOpts);
+});
+
+// GET /api/entities/exposed — list of exposed entities
+app.MapGet("/api/entities/exposed", (ExposedEntitiesStore store) =>
+{
+  return Results.Json(store.GetAll(), jsonOpts);
+});
+
+// POST /api/entities/exposed — add an entity to the exposed list
+app.MapPost("/api/entities/exposed", (ExposedEntitiesStore store, HttpContext ctx) =>
+{
+  using var reader = new StreamReader(ctx.Request.Body);
+  var body = reader.ReadToEndAsync().GetAwaiter().GetResult();
+  var doc = JsonDocument.Parse(body);
+  var entityId = doc.RootElement.GetProperty("entityId").GetString()!;
+  var friendlyName = doc.RootElement.TryGetProperty("friendlyName", out var fn)
+      ? fn.GetString() : null;
+
+  try
+  {
+    var entity = store.Add(entityId, friendlyName);
+    return Results.Json(entity, jsonOpts);
+  }
+  catch (InvalidOperationException ex)
+  {
+    return Results.Conflict(new { error = ex.Message });
+  }
+});
+
+// DELETE /api/entities/exposed/{entityId} — remove an entity
+app.MapDelete("/api/entities/exposed/{entityId}", (string entityId, ExposedEntitiesStore store) =>
+{
+  return store.Remove(entityId) ? Results.Ok() : Results.NotFound();
+});
+
+// GET /api/entities/search — search HA entities via WebSocket
+app.MapGet("/api/entities/search", async (string? q, IHaWebSocketClient haClient, CancellationToken ct) =>
+{
+  var states = await haClient.GetStatesAsync(ct);
+  var results = new List<object>();
+
+  if (states.ValueKind == JsonValueKind.Array)
+  {
+    foreach (var entity in states.EnumerateArray())
+    {
+      var entityId = entity.GetProperty("entity_id").GetString() ?? "";
+      var friendlyName = "";
+      if (entity.TryGetProperty("attributes", out var attrs) &&
+          attrs.TryGetProperty("friendly_name", out var fn))
+        friendlyName = fn.GetString() ?? "";
+
+      if (string.IsNullOrEmpty(q) ||
+          entityId.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+          friendlyName.Contains(q, StringComparison.OrdinalIgnoreCase))
+      {
+        results.Add(new { entityId, friendlyName });
+      }
+
+      if (results.Count >= 50) break;
+    }
+  }
+
+  return Results.Json(results, jsonOpts);
+});
+
 // GET / — serve the dashboard
 app.MapFallbackToFile("index.html", new StaticFileOptions
 {
@@ -131,6 +202,7 @@ file sealed class BootstrapService : IHostedService
   private readonly ILocalMqttBridge _localMqtt;
   private readonly IHaWebSocketClient _haClient;
   private readonly BridgeOptions _options;
+  private readonly ConnectionStatusTracker _tracker;
   private readonly ILogger<BootstrapService> _logger;
 
   public BootstrapService(
@@ -138,12 +210,14 @@ file sealed class BootstrapService : IHostedService
       ILocalMqttBridge localMqtt,
       IHaWebSocketClient haClient,
       IOptions<BridgeOptions> options,
+      ConnectionStatusTracker tracker,
       ILogger<BootstrapService> logger)
   {
     _mqtt = mqtt;
     _localMqtt = localMqtt;
     _haClient = haClient;
     _options = options.Value;
+    _tracker = tracker;
     _logger = logger;
   }
 
@@ -151,15 +225,21 @@ file sealed class BootstrapService : IHostedService
   {
     _logger.LogInformation("Nestor Bridge starting — connecting to HA WebSocket and MQTT...");
 
+    _tracker.SetState(ConnectionStatusTracker.HaWebSocket, ConnectionState.Connecting);
     await _haClient.ConnectAsync(cancellationToken);
+    _tracker.SetState(ConnectionStatusTracker.HaWebSocket, ConnectionState.Connected);
     _logger.LogInformation("HA WebSocket connected");
 
+    _tracker.SetState(ConnectionStatusTracker.CloudMqtt, ConnectionState.Connecting);
     await _mqtt.ConnectAsync(cancellationToken);
+    _tracker.SetState(ConnectionStatusTracker.CloudMqtt, ConnectionState.Connected);
     _logger.LogInformation("Cloud MQTT connected");
 
     if (_options.LocalMqtt.Enabled)
     {
+      _tracker.SetState(ConnectionStatusTracker.LocalMqtt, ConnectionState.Connecting);
       await _localMqtt.ConnectAsync(cancellationToken);
+      _tracker.SetState(ConnectionStatusTracker.LocalMqtt, ConnectionState.Connected);
       _logger.LogInformation("Local MQTT connected ({Host}:{Port})",
           _options.LocalMqtt.Host, _options.LocalMqtt.Port);
     }
@@ -170,7 +250,10 @@ file sealed class BootstrapService : IHostedService
     _logger.LogInformation("Nestor Bridge shutting down...");
     if (_options.LocalMqtt.Enabled)
       await _localMqtt.DisconnectAsync(cancellationToken);
+    _tracker.SetState(ConnectionStatusTracker.LocalMqtt, ConnectionState.Disconnected);
     await _mqtt.DisconnectAsync(cancellationToken);
+    _tracker.SetState(ConnectionStatusTracker.CloudMqtt, ConnectionState.Disconnected);
     await _haClient.DisconnectAsync(cancellationToken);
+    _tracker.SetState(ConnectionStatusTracker.HaWebSocket, ConnectionState.Disconnected);
   }
 }
