@@ -20,6 +20,7 @@ public sealed class HaCallServiceMessage
   public string Service { get; set; } = string.Empty;
 
   [JsonPropertyName("service_data")]
+  [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
   public Dictionary<string, object>? ServiceData { get; set; }
 
   [JsonPropertyName("target")]
