@@ -1,5 +1,5 @@
 name: "Nestor Smart Home Bridge"
-version: "1.4.2"
+version: "1.4.3"
 slug: "nestor_smart_home_bridge"
 description: "Bridge MQTT v5 <-> Home Assistant WebSocket for Nestor cloud"
 url: "https://github.com/johan-krrn/NestorSmartHomeAddons"

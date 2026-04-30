@@ -113,4 +113,39 @@ public sealed class HaRestClient : IHaRestClient
     using var doc = JsonDocument.Parse(body);
     return (true, doc.RootElement.Clone(), null);
   }
+
+  /// <inheritdoc/>
+  public async Task<(bool Success, JsonElement? Data, string? Error)> PostRawAsync(
+      string path,
+      JsonElement? body,
+      CancellationToken cancellationToken)
+  {
+    _logger.LogInformation("REST POST {Path}", path);
+
+    var jsonBody = body.HasValue ? body.Value.GetRawText() : "{}";
+
+    HttpResponseMessage response;
+    try
+    {
+      using var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+      response = await _httpClient.PostAsync(path, content, cancellationToken);
+    }
+    catch (Exception ex)
+    {
+      _logger.LogError(ex, "HTTP POST request failed for {Path}", path);
+      return (false, null, ex.Message);
+    }
+
+    var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+
+    if (!response.IsSuccessStatusCode)
+    {
+      var error = $"HTTP {(int)response.StatusCode}: {responseBody}";
+      _logger.LogError("REST POST {Path} failed: {Error}", path, error);
+      return (false, null, error);
+    }
+
+    using var doc = JsonDocument.Parse(responseBody);
+    return (true, doc.RootElement.Clone(), null);
+  }
 }

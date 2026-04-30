@@ -31,4 +31,13 @@ public interface IHaRestClient
   Task<(bool Success, JsonElement? Data, string? Error)> GetRawAsync(
       string path,
       CancellationToken cancellationToken);
+
+  /// <summary>
+  /// Perform a generic POST request against a HA REST API path (relative to /api/).
+  /// Used as a fallback for commands that are not available via the WebSocket API.
+  /// </summary>
+  Task<(bool Success, JsonElement? Data, string? Error)> PostRawAsync(
+      string path,
+      JsonElement? body,
+      CancellationToken cancellationToken);
 }

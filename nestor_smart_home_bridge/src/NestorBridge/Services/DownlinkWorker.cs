@@ -36,6 +36,14 @@ public sealed class DownlinkWorker : IHostedService
         ["config/config_entries/flow/handlers"] = "config/config_entries/flow_handlers",
       };
 
+  // Commands not exposed by the HA WebSocket API — must go through REST POST.
+  // Key: command name received from cloud. Value: relative REST path (from /api/).
+  private static readonly Dictionary<string, string> _restPostCommands =
+      new(StringComparer.OrdinalIgnoreCase)
+      {
+        ["config/config_entries/flow/init"] = "config/config_entries/flow",
+      };
+
   public DownlinkWorker(
       IMqttBridge mqtt,
       IHaWebSocketClient haClient,
@@ -263,10 +271,24 @@ public sealed class DownlinkWorker : IHostedService
   private async Task<JsonElement> ExecuteGenericCommandAsync(CloudRequest request)
   {
     // Some HA commands are not available via WebSocket and must go through REST GET.
-    if (_restGetCommands.TryGetValue(request.Command, out var restPath))
+    if (_restGetCommands.TryGetValue(request.Command, out var restGetPath))
     {
-      _logger.LogInformation("REST-only command {Command} → GET {Path}", request.Command, restPath);
-      var (success, data, error) = await _restClient.GetRawAsync(restPath, CancellationToken.None);
+      _logger.LogInformation("REST-only command {Command} → GET {Path}", request.Command, restGetPath);
+      var (success, data, error) = await _restClient.GetRawAsync(restGetPath, CancellationToken.None);
+      if (success && data.HasValue)
+        return data.Value;
+
+      using var errDoc = JsonDocument.Parse(
+          JsonSerializer.Serialize(new { success = false, error }));
+      return errDoc.RootElement.Clone();
+    }
+
+    // Some HA commands are not available via WebSocket and must go through REST POST.
+    if (_restPostCommands.TryGetValue(request.Command, out var restPostPath))
+    {
+      _logger.LogInformation("REST-only command {Command} → POST {Path}", request.Command, restPostPath);
+      var body = ResolvePayload(request.Payload);
+      var (success, data, error) = await _restClient.PostRawAsync(restPostPath, body, CancellationToken.None);
       if (success && data.HasValue)
         return data.Value;
 
