@@ -120,12 +120,15 @@ public sealed class DownlinkWorker : IHostedService
         command.CommandId, success ? "success" : "error");
   }
 
+  private static readonly JsonSerializerOptions _caseInsensitiveOpts =
+      new() { PropertyNameCaseInsensitive = true };
+
   private async Task HandleCloudRequestAsync(string payloadStr)
   {
     CloudRequest? request = null;
     try
     {
-      request = JsonSerializer.Deserialize<CloudRequest>(payloadStr);
+      request = JsonSerializer.Deserialize<CloudRequest>(payloadStr, _caseInsensitiveOpts);
     }
     catch (JsonException ex)
     {
