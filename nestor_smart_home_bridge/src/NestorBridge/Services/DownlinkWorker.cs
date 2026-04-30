@@ -20,6 +20,7 @@ public sealed class DownlinkWorker : IHostedService
 {
   private readonly IMqttBridge _mqtt;
   private readonly IHaWebSocketClient _haClient;
+  private readonly IHaRestClient _restClient;
   private readonly HaServiceCaller _serviceCaller;
   private readonly CommandTranslator _translator;
   private readonly BridgeOptions _options;
@@ -27,9 +28,18 @@ public sealed class DownlinkWorker : IHostedService
   private readonly ExposedEntitiesStore _exposedEntities;
   private readonly ILogger<DownlinkWorker> _logger;
 
+  // Commands not exposed by the HA WebSocket API — must go through REST GET.
+  // Key: command name received from cloud. Value: relative REST path (from /api/).
+  private static readonly Dictionary<string, string> _restGetCommands =
+      new(StringComparer.OrdinalIgnoreCase)
+      {
+        ["config/config_entries/flow/handlers"] = "config/config_entries/flow_handlers",
+      };
+
   public DownlinkWorker(
       IMqttBridge mqtt,
       IHaWebSocketClient haClient,
+      IHaRestClient restClient,
       HaServiceCaller serviceCaller,
       CommandTranslator translator,
       IOptions<BridgeOptions> options,
@@ -39,6 +49,7 @@ public sealed class DownlinkWorker : IHostedService
   {
     _mqtt = mqtt;
     _haClient = haClient;
+    _restClient = restClient;
     _serviceCaller = serviceCaller;
     _translator = translator;
     _options = options.Value;
@@ -251,6 +262,19 @@ public sealed class DownlinkWorker : IHostedService
 
   private async Task<JsonElement> ExecuteGenericCommandAsync(CloudRequest request)
   {
+    // Some HA commands are not available via WebSocket and must go through REST GET.
+    if (_restGetCommands.TryGetValue(request.Command, out var restPath))
+    {
+      _logger.LogInformation("REST-only command {Command} → GET {Path}", request.Command, restPath);
+      var (success, data, error) = await _restClient.GetRawAsync(restPath, CancellationToken.None);
+      if (success && data.HasValue)
+        return data.Value;
+
+      using var errDoc = JsonDocument.Parse(
+          JsonSerializer.Serialize(new { success = false, error }));
+      return errDoc.RootElement.Clone();
+    }
+
     var extraProps = ResolvePayload(request.Payload);
     _logger.LogInformation("Generic HA WebSocket command: {Type}", request.Command);
     return await _haClient.SendCommandAsync(request.Command, extraProps, CancellationToken.None);

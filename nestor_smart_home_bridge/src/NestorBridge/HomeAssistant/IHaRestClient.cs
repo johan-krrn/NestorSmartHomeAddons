@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace NestorBridge.HomeAssistant;
 
 /// <summary>
@@ -20,5 +22,13 @@ public interface IHaRestClient
   /// </summary>
   Task<(bool Success, string? Error)> DeleteAutomationAsync(
       string automationId,
+      CancellationToken cancellationToken);
+
+  /// <summary>
+  /// Perform a generic GET request against a HA REST API path (relative to /api/).
+  /// Used as a fallback for commands that are not available via the WebSocket API.
+  /// </summary>
+  Task<(bool Success, JsonElement? Data, string? Error)> GetRawAsync(
+      string path,
       CancellationToken cancellationToken);
 }

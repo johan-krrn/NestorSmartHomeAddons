@@ -82,4 +82,35 @@ public sealed class HaRestClient : IHaRestClient
     _logger.LogError("REST DELETE {Url} failed: {Error}", url, error);
     return (false, error);
   }
+
+  /// <inheritdoc/>
+  public async Task<(bool Success, JsonElement? Data, string? Error)> GetRawAsync(
+      string path,
+      CancellationToken cancellationToken)
+  {
+    _logger.LogInformation("REST GET {Path}", path);
+
+    HttpResponseMessage response;
+    try
+    {
+      response = await _httpClient.GetAsync(path, cancellationToken);
+    }
+    catch (Exception ex)
+    {
+      _logger.LogError(ex, "HTTP GET request failed for {Path}", path);
+      return (false, null, ex.Message);
+    }
+
+    var body = await response.Content.ReadAsStringAsync(cancellationToken);
+
+    if (!response.IsSuccessStatusCode)
+    {
+      var error = $"HTTP {(int)response.StatusCode}: {body}";
+      _logger.LogError("REST GET {Path} failed: {Error}", path, error);
+      return (false, null, error);
+    }
+
+    using var doc = JsonDocument.Parse(body);
+    return (true, doc.RootElement.Clone(), null);
+  }
 }
