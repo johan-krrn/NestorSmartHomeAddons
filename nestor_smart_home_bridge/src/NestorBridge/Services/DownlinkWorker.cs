@@ -199,6 +199,33 @@ public sealed class DownlinkWorker : IHostedService
     {
       _logger.LogError(ex, "Failed to handle {Command} request for ConnectionId={ConnectionId}",
           request.Command, request.TargetConnectionId);
+
+      // Always send an error response so the cloud doesn't time out waiting
+      try
+      {
+        using var errDoc = JsonDocument.Parse(
+            JsonSerializer.Serialize(new { success = false, error = ex.Message }));
+
+        var errorResponse = new CloudRequestResponse
+        {
+          TargetConnectionId = request.TargetConnectionId,
+          Command = request.Command,
+          Data = errDoc.RootElement.Clone()
+        };
+
+        var errorBytes = JsonSerializer.SerializeToUtf8Bytes(errorResponse);
+        var responseTopic = Topics.CloudResponses(_options.BoxId);
+        await _mqtt.PublishAsync(responseTopic, errorBytes,
+            MqttQualityOfServiceLevel.AtLeastOnce, CancellationToken.None);
+
+        _messageLog.Add(new MessageLogEntry(
+            DateTime.UtcNow, MessageDirection.Outbound, responseTopic,
+            System.Text.Encoding.UTF8.GetString(errorBytes), $"error: {request.Command}"));
+      }
+      catch (Exception pubEx)
+      {
+        _logger.LogError(pubEx, "Failed to publish error response for {Command}", request.Command);
+      }
     }
   }
 
