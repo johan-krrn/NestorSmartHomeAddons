@@ -4,8 +4,6 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using NestorBridge.Configuration;
 using NestorBridge.HomeAssistant.Models;
 
 namespace NestorBridge.HomeAssistant;
@@ -29,15 +27,11 @@ public sealed class HaWebSocketClient : IHaWebSocketClient, IAsyncDisposable
 
   public event Func<HaEvent, Task>? StateChanged;
 
-  public HaWebSocketClient(IOptions<BridgeOptions> options, ILogger<HaWebSocketClient> logger)
+  public HaWebSocketClient(ILogger<HaWebSocketClient> logger)
   {
     _logger = logger;
-    var opts = options.Value;
 
-    // Endpoint: options override > env var > default supervisor endpoint
-    _wsEndpoint = !string.IsNullOrWhiteSpace(opts.HaWsEndpoint)
-        ? opts.HaWsEndpoint
-        : Environment.GetEnvironmentVariable("HA_WS_ENDPOINT") ?? DefaultWsEndpoint;
+    _wsEndpoint = Environment.GetEnvironmentVariable("HA_WS_ENDPOINT") ?? DefaultWsEndpoint;
 
     // Token: env var (injected by Supervisor in prod, set manually in dev)
     _supervisorToken = Environment.GetEnvironmentVariable("SUPERVISOR_TOKEN")

@@ -18,6 +18,11 @@ public sealed class MqttBridge : IMqttBridge, IAsyncDisposable
   private int _reconnectDelayMs = 1000;
   private const int MaxReconnectDelayMs = 60_000;
 
+  private const string MqttHost = "eg-nestorsmarthome-poc.westeurope-1.ts.eventgrid.azure.net";
+  private const int MqttPort = 8883;
+  private const string CertPath = "/ssl/certs/device.crt";
+  private const string KeyPath = "/ssl/certs/device.key";
+
   public event Func<string, byte[], Task>? MessageReceived;
 
   public MqttBridge(IOptions<BridgeOptions> options, ILogger<MqttBridge> logger)
@@ -36,23 +41,15 @@ public sealed class MqttBridge : IMqttBridge, IAsyncDisposable
     var optionsBuilder = new MqttClientOptionsBuilder()
         .WithProtocolVersion(MqttProtocolVersion.V500)
         .WithClientId(_options.MqttClientId)
-        .WithTcpServer(_options.MqttHost, _options.MqttPort)
+        .WithTcpServer(MqttHost, MqttPort)
         .WithCleanSession(true)
         .WithKeepAlivePeriod(TimeSpan.FromSeconds(30));
 
-    if (string.Equals(_options.AuthMode, "x509", StringComparison.OrdinalIgnoreCase))
-    {
-      ConfigureX509(optionsBuilder);
-    }
-    else
-    {
-      ConfigureSas(optionsBuilder);
-    }
+    ConfigureX509(optionsBuilder);
 
     var mqttOptions = optionsBuilder.Build();
 
-    _logger.LogInformation("Connecting to MQTT broker {Host}:{Port} (auth={AuthMode})",
-        _options.MqttHost, _options.MqttPort, _options.AuthMode);
+    _logger.LogInformation("Connecting to MQTT broker {Host}:{Port}", MqttHost, MqttPort);
 
     await _client.ConnectAsync(mqttOptions, cancellationToken);
 
@@ -91,12 +88,12 @@ public sealed class MqttBridge : IMqttBridge, IAsyncDisposable
 
   private void ConfigureX509(MqttClientOptionsBuilder builder)
   {
-    if (!File.Exists(_options.CertPath))
-      throw new FileNotFoundException($"Client certificate not found: {_options.CertPath}");
-    if (!File.Exists(_options.KeyPath))
-      throw new FileNotFoundException($"Client key not found: {_options.KeyPath}");
+    if (!File.Exists(CertPath))
+      throw new FileNotFoundException($"Client certificate not found: {CertPath}");
+    if (!File.Exists(KeyPath))
+      throw new FileNotFoundException($"Client key not found: {KeyPath}");
 
-    var cert = X509Certificate2.CreateFromPemFile(_options.CertPath, _options.KeyPath);
+    var cert = X509Certificate2.CreateFromPemFile(CertPath, KeyPath);
     // Re-export to PKCS12 (required on some platforms for TLS client auth)
     cert = new X509Certificate2(cert.Export(X509ContentType.Pkcs12));
 
@@ -110,31 +107,6 @@ public sealed class MqttBridge : IMqttBridge, IAsyncDisposable
     .Build();
 
     builder.WithTlsOptions(tlsOptions);
-  }
-
-  private void ConfigureSas(MqttClientOptionsBuilder builder)
-  {
-    if (!string.IsNullOrEmpty(_options.SasUsername))
-      builder.WithCredentials(_options.SasUsername, _options.SasPassword);
-
-    if (_options.NoTls)
-    {
-      _logger.LogWarning("TLS disabled (no_tls=true) — FOR LOCAL TESTING ONLY");
-      return;
-    }
-
-    var tlsOptions = new MqttClientTlsOptionsBuilder()
-        .UseTls()
-        .WithSslProtocols(SslProtocols.Tls12 | SslProtocols.Tls13)
-        .WithCertificateValidationHandler(ctx => ctx.SslPolicyErrors == System.Net.Security.SslPolicyErrors.None);
-
-    if (File.Exists(_options.CaPath))
-    {
-      var caCert = new X509Certificate2(_options.CaPath);
-      tlsOptions.WithTrustChain(new X509Certificate2Collection { caCert });
-    }
-
-    builder.WithTlsOptions(tlsOptions.Build());
   }
 
   private async Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs args)

@@ -5,24 +5,10 @@ namespace NestorBridge.Tests;
 public class BridgeOptionsTests
 {
   [Fact]
-  public void Validate_MissingMqttHost_Throws()
-  {
-    var opts = new BridgeOptions
-    {
-      MqttHost = "",
-      BoxId = "test",
-      MqttClientId = "test"
-    };
-
-    Assert.Throws<InvalidOperationException>(() => opts.Validate());
-  }
-
-  [Fact]
   public void Validate_MissingBoxId_Throws()
   {
     var opts = new BridgeOptions
     {
-      MqttHost = "broker.example.com",
       BoxId = "",
       MqttClientId = "test"
     };
@@ -35,7 +21,6 @@ public class BridgeOptionsTests
   {
     var opts = new BridgeOptions
     {
-      MqttHost = "broker.example.com",
       BoxId = "box-1",
       MqttClientId = ""
     };
@@ -48,7 +33,6 @@ public class BridgeOptionsTests
   {
     var opts = new BridgeOptions
     {
-      MqttHost = "broker.example.com",
       BoxId = "box-1",
       MqttClientId = "box-1"
     };

@@ -22,7 +22,6 @@ public class PairingRelayWorkerTests
     var opts = Options.Create(new BridgeOptions
     {
       BoxId = boxId,
-      MqttHost = "broker",
       MqttClientId = "client",
       LocalMqtt = new LocalMqttOptions
       {

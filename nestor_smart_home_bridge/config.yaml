@@ -1,5 +1,5 @@
 name: "Nestor Smart Home Bridge"
-version: "1.3.3"
+version: "1.4.0"
 slug: "nestor_smart_home_bridge"
 description: "Bridge MQTT v5 <-> Home Assistant WebSocket for Nestor cloud"
 url: "https://github.com/johan-krrn/NestorSmartHomeAddons"
@@ -19,19 +19,9 @@ homeassistant_api: true
 auth_api: true
 host_network: false
 options:
-  mqtt_host: "eg-nestorsmarthome-poc.westeurope-1.ts.eventgrid.azure.net"
-  mqtt_port: 8883
   mqtt_client_id: ""
   box_id: ""
-  auth_mode: "sas"
-  sas_username: ""
-  sas_password: ""
-  cert_path: "/ssl/certs/device.crt"
-  key_path: "/ssl/certs/device.key"
-  ca_path: "/ssl/certs/ca.crt"
   log_level: "info"
-  no_tls: false
-  ha_ws_endpoint: ""
   telemetry_filter:
     domains:
       - "light"
@@ -46,23 +36,12 @@ options:
     username: ""
     password: ""
     topics:
-      - "zigbee2mqtt/bridge/logging"
       - "zigbee2mqtt/bridge/event"
       - "zigbee2mqtt/bridge/state"
 schema:
-  mqtt_host: str
-  mqtt_port: port
   mqtt_client_id: str
   box_id: str
-  auth_mode: "list(sas|x509)"
-  sas_username: "str?"
-  sas_password: "str?"
-  cert_path: str
-  key_path: str
-  ca_path: str
   log_level: "list(trace|debug|info|warning|error)"
-  no_tls: bool
-  ha_ws_endpoint: "str?"
   telemetry_filter:
     domains:
       - str
