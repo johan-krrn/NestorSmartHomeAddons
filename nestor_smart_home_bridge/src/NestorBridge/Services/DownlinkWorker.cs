@@ -297,9 +297,48 @@ public sealed class DownlinkWorker : IHostedService
       return errDoc.RootElement.Clone();
     }
 
+    // config/config_entries/flow/configure → POST /api/config/config_entries/flow/{flow_id}
+    // The flow_id is dynamic so it cannot use the static mapping table.
+    if (string.Equals(request.Command, "config/config_entries/flow/configure",
+            StringComparison.OrdinalIgnoreCase))
+    {
+      return await ExecuteFlowConfigureAsync(request);
+    }
+
     var extraProps = ResolvePayload(request.Payload);
     _logger.LogInformation("Generic HA WebSocket command: {Type}", request.Command);
     return await _haClient.SendCommandAsync(request.Command, extraProps, CancellationToken.None);
+  }
+
+  private async Task<JsonElement> ExecuteFlowConfigureAsync(CloudRequest request)
+  {
+    var payload = ResolvePayload(request.Payload)
+        ?? throw new InvalidOperationException("flow/configure request missing or invalid Payload");
+
+    if (!payload.TryGetProperty("flow_id", out var flowIdEl))
+      throw new InvalidOperationException("flow/configure Payload missing 'flow_id'");
+
+    var flowId = flowIdEl.GetString()
+        ?? throw new InvalidOperationException("flow/configure 'flow_id' is null");
+
+    var path = $"config/config_entries/flow/{Uri.EscapeDataString(flowId)}";
+
+    // HA expects the user_input object directly as the POST body.
+    JsonElement? body = null;
+    if (payload.TryGetProperty("user_input", out var userInputEl)
+        && userInputEl.ValueKind == JsonValueKind.Object)
+    {
+      body = userInputEl;
+    }
+
+    _logger.LogInformation("REST flow/configure → POST {Path}", path);
+    var (success, data, error) = await _restClient.PostRawAsync(path, body, CancellationToken.None);
+    if (success && data.HasValue)
+      return data.Value;
+
+    using var errDoc = JsonDocument.Parse(
+        JsonSerializer.Serialize(new { success = false, error }));
+    return errDoc.RootElement.Clone();
   }
 
   private async Task<JsonElement> ExecuteCallServiceAsync(CloudRequest request)

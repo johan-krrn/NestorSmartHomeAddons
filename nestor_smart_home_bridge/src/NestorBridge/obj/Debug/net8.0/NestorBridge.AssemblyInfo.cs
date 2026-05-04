@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NestorBridge")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+728ab4cc2b7359376ea8ec304aa138d73622e516")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+accf3403e318488dc226a0aea29a552962e97287")]
 [assembly: System.Reflection.AssemblyProductAttribute("NestorBridge")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NestorBridge")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
